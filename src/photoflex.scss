@@ -1,5 +1,5 @@
 [data-photoflex-container] {
-  padding: 20px;
+  padding: 30px;
   position: relative;
   text-align: center;
   background-color: #ececec;
@@ -34,6 +34,67 @@
         &:hover {
           opacity: 0.8;
         }
+      }
+      .size-box {
+        position: absolute;
+        top: 100%;
+        font-size: 10px;
+        right: -1px;
+        background-color: red;
+        padding: 2px;
+        color: white;
+        box-sizing: border-box;
+        border: 1px solid red;
+      }
+    }
+  }
+  .range-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #0000004d;
+    font-size: 0.85rem;
+    z-index: 100;
+    .range-box {
+      background-color: white;
+      min-width: 260px;
+      text-align: left;
+      & > h3 {
+        margin: 0;
+        padding: 10px 20px;
+      }
+      .range-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        cursor: pointer;
+        & > li {
+          padding: 5px 20px;
+          &.active {
+            background-color: #cff4ff;
+          }
+          &:hover {
+            background-color: aliceblue;
+          }
+        }
+      }
+      .range-input {
+        padding: 0px 20px 10px;
+        display: flex;
+        border-bottom: 1px solid #cdcdcd;
+        & > input {
+          margin-right: 4px;
+        }
+      }
+      .footer {
+        padding: 10px 20px;
+        border-top: 1px solid #cdcdcd;
+        text-align: right;
       }
     }
   }

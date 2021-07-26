@@ -3,12 +3,14 @@ import dom from './dom';
 import { Dnd } from './dnd';
 
 let boxEl;
-const drawRange = (el, range) => {
-  console.log(el, range);
-  el.style.left = `${range.x}px`;
-  el.style.top = `${range.y}px`;
-  el.style.width = `${range.width}px`;
-  el.style.height = `${range.height}px`;
+const drawRange = (el, selection) => {
+  el.style.left = `${selection.x}px`;
+  el.style.top = `${selection.y}px`;
+  el.style.width = `${selection.width}px`;
+  el.style.height = `${selection.height}px`;
+};
+const drawSize = (el, selection) => {
+  el.innerHTML = `${selection.width} x ${selection.height}`;
 };
 const pos = {
   x: 0,
@@ -16,6 +18,7 @@ const pos = {
   parent: null
 };
 const handler = {
+  data: {},
   accept(el) {
     const elem = dom.closest(el, '.btn-icon');
     return !!elem;
@@ -31,25 +34,30 @@ const handler = {
     };
     console.log('[BEFORE]', pos);
   },
-  dragging(ctx) {
+  dragging(ctx, { selection }) {
     let left = Math.max(0, pos.x + ctx.dx);
     let top = Math.max(0, pos.y + ctx.dy);
     left = Math.min(left, pos.parent.width - pos.width);
     top = Math.min(top, pos.parent.height - pos.height);
-    boxEl.style.left = `${left}px`;
-    boxEl.style.top = `${top}px`;
+    selection.selection.x = left;
+    selection.selection.y = top;
+    selection.repaint();
+    // boxEl.style.left = `${left}px`;
+    // boxEl.style.top = `${top}px`;
   },
   afterDrag(ctx) {
     console.log('[AFTER]', ctx);
   }
 };
 class Selection {
-  constructor(parentEl, range) {
+  constructor(parentEl, selection, ranges) {
     this.$$ = { parent: parentEl };
-    this.range = range;
+    this.selection = selection;
+    this.ranges = ranges;
     this.visible = true;
     boxEl = this.prepareEl();
-    this.dnd = new Dnd(handler);
+    this.dnd = new Dnd(handler, { selection: this });
+    this.repaint();
   }
 
   prepareEl() {
@@ -62,17 +70,35 @@ class Selection {
     div.appendChild(button);
     parent.appendChild(div);
     this.$$.el = div;
+    const sizeDiv = dom.tag.div('.size-box');
+
+    /* size box */
+    div.appendChild(sizeDiv);
+    dom.event.click(sizeDiv, () => {
+      this.eventBus.emit('sizebox', this.selection);
+    });
+    this.$$.sizeEl = sizeDiv;
     return div;
   }
 
   setRange(range) {
-    this.range = range;
+    this.selection = range;
+    this.repaint();
+  }
+
+  mergeSelection(selection) {
+    const { x, y, width, height } = selection;
+    this.selection.x = x || this.selection.x;
+    this.selection.y = y || this.selection.y;
+    this.selection.width = width || this.selection.y;
+    this.selection.height = height || this.selection.height;
     this.repaint();
   }
 
   repaint() {
-    if (this.range) {
-      drawRange(this.$$.el, this.range);
+    if (this.selection) {
+      drawRange(this.$$.el, this.selection);
+      drawSize(this.$$.sizeEl, this.selection);
     }
   }
 }

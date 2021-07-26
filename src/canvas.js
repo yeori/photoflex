@@ -1,4 +1,6 @@
 import dom from './dom';
+
+const resolveWidth = (parentEl) => parentEl.offsetWidth;
 /**
  * 이미지의 너비 또는 높이가 canvas를 넘지 않게 조정함
  * @param {Canvas} canvas
@@ -111,14 +113,14 @@ class Canvas {
   }
 
   injectCanvas() {
-    const div = dom.tag.div('.canvas-wrapper');
+    // const div = dom.tag.div('.canvas-wrapper');
+    // div.appendChild(canvasEl);
     const canvasEl = dom.tag.canvas();
-    div.appendChild(canvasEl);
-    this.parentEl.appendChild(div);
+    this.parentEl.appendChild(canvasEl);
     canvasEl.width = this.canvasWidth;
     canvasEl.height = this.canvasHeight;
     this.ctx = canvasEl.getContext('2d');
-    this.$$.wrapperEl = div;
+    // this.$$.wrapperEl = div;
     this.repaint();
   }
 
@@ -126,9 +128,18 @@ class Canvas {
     ctx.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
   }
 
-  copyAt(rect) {
-    const { x, y, width, height } = rect;
-    return this.ctx.getImageData(x, y, width, height);
+  copyImageAt(rect) {
+    const imgData = this.ctx.getImageData(
+      rect.x,
+      rect.y,
+      rect.width,
+      rect.height
+    );
+    const copyCanvas = document.createElement('canvas');
+    copyCanvas.width = rect.width;
+    copyCanvas.height = rect.height;
+    copyCanvas.getContext('2d').putImageData(imgData, 0, 0);
+    return copyCanvas.toDataURL();
   }
 
   wrapperEl() {
@@ -170,7 +181,7 @@ class Canvas {
   }
 
   get canvasWidth() {
-    return this.config.width;
+    return resolveWidth(this.parentEl, this.config.width);
   }
 
   get canvasHeight() {

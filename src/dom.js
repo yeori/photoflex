@@ -1,3 +1,4 @@
+/* eslint-disable max-classes-per-file */
 class Attr {
   constructor(attrExpression) {
     this.expression = attrExpression;
@@ -25,6 +26,34 @@ class Attr {
     }
   }
 }
+const EMPTY_SET = new Set();
+class EventBus {
+  constructor() {
+    this.el = document.createComment('dummy el for event bus');
+    this.callbacks = new Map();
+  }
+
+  on(eventName, callback) {
+    let callbackList = this.callbacks.get(eventName);
+    if (!callbackList) {
+      callbackList = new Set();
+      this.callbacks.set(eventName, callbackList);
+    }
+    callbackList.add(callback);
+  }
+
+  emit(eventName, payload) {
+    const callbackList = this.callbacks.get(eventName) || EMPTY_SET;
+    callbackList.forEach((cb) => {
+      try {
+        cb(payload);
+      } catch (e) {
+        console.log(e);
+      }
+    });
+  }
+}
+
 const closest = (elem, selector) => {
   if (elem.nodeType === 1) {
     return elem.closest(selector);
@@ -93,19 +122,91 @@ const fileToImage = (file) => {
   });
 };
 
-const registerEvent = (target, eventName, callback) => {
+const registerEvent = (target, eventName, callback, options) => {
   const el = target || window;
-  el.addEventListener(eventName, callback);
+  el.addEventListener(eventName, callback, options);
 };
-const event = {
-  mousedown: (callback, target) => {
-    registerEvent(target, 'mousedown', callback);
-  },
-  mousemove: (callback, target) => {
-    registerEvent(target, 'mousemove', callback);
-  },
-  mouseup: (callback, target) => {
-    registerEvent(target, 'mouseup', callback);
+
+const data = {
+  int: (el, attrList) => {
+    const d = {};
+    attrList.forEach((key) => {
+      const v = el.dataset[key];
+      d[key] = parseInt(v, 10);
+    });
+    return d;
   }
 };
-export default { tag, closest, imageSize, fileToImage, event };
+const event = {
+  createEventBus: () => new EventBus(),
+  mousedown: (callback, target, options) => {
+    registerEvent(target, 'mousedown', callback, options);
+  },
+  mousemove: (callback, target, options) => {
+    registerEvent(target, 'mousemove', callback, options);
+  },
+  mouseup: (callback, target, options) => {
+    registerEvent(target, 'mouseup', callback, options);
+  },
+  touchstart: (callback, target, options) => {
+    registerEvent(target, 'touchstart', callback, options);
+  },
+  touchmove: (callback, target, options) => {
+    registerEvent(target, 'touchmove', callback, options);
+  },
+  touchend: (callback, target, options) => {
+    registerEvent(target, 'touchend', callback, options);
+  },
+  click: (target, callback, options) => {
+    registerEvent(target, 'click', callback, options);
+  }
+};
+const css = (el, styles) => {
+  const converters = {
+    width: (val) => {
+      const type = typeof val;
+      return type === 'number' ? `${val}px` : val;
+    }
+  };
+  converters.height = converters.width;
+
+  Object.keys(styles).forEach((key) => {
+    const fn = converters[key] || ((val) => val);
+    const value = fn(styles[key]);
+    // eslint-disable-next-line no-param-reassign
+    el.style[key] = value;
+  });
+};
+const parseTemplate = (template, params) => {
+  let t = template;
+  Object.keys(params).forEach((key) => {
+    const text = '@' + key;
+    const value = params[key];
+    t = t.replaceAll(text, value);
+  });
+  const virtualElem = document.createElement('template');
+  virtualElem.innerHTML = t;
+  return virtualElem.content.firstElementChild;
+  // return virtualDiv.firstElementChild;
+};
+const findOne = (el, cssSelector) => el.querySelector(cssSelector);
+const is = (el, cssSelector, callback) => {
+  // const elem = el.querySelector(cssSelector);
+  const found = el.matches(cssSelector);
+  if (found) {
+    callback();
+  }
+  return found;
+};
+export default {
+  tag,
+  closest,
+  imageSize,
+  fileToImage,
+  event,
+  css,
+  parseTemplate,
+  findOne,
+  is,
+  data
+};
