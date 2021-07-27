@@ -1,3 +1,4 @@
+import { Dnd } from './dnd';
 import dom from './dom';
 
 const resolveWidth = (parentEl) => parentEl.offsetWidth;
@@ -103,23 +104,51 @@ const scaling = {
   contain: fitByContain,
   none: fitByOriginalSize
 };
+
+function DndHandler(canvas) {
+  // const { x: vx, y: vy } = canvas.$$.viewport;
+  let vx;
+  let vy;
+  return {
+    accept(el) {
+      return el === canvas.$$.canvasEl;
+    },
+    beforeDrag() {
+      vx = canvas.$$.viewport.x;
+      vy = canvas.$$.viewport.y;
+    },
+    dragging(ctx) {
+      // eslint-disable-next-line no-param-reassign
+      canvas.$$.viewport.x = vx + ctx.dx;
+      // eslint-disable-next-line no-param-reassign
+      canvas.$$.viewport.y = vy + ctx.dy;
+      canvas.repaint();
+    },
+    afterDrag() {}
+  };
+}
+
 class Canvas {
   constructor(wrapperEl, config) {
     this.parentEl = wrapperEl;
     this.config = config;
     this.ctx = null;
-    this.$$ = {};
+    this.$$ = {
+      viewport: null
+    };
     this.injectCanvas();
+    this.$$.dnd = new Dnd(new DndHandler(this));
   }
 
   injectCanvas() {
     // const div = dom.tag.div('.canvas-wrapper');
     // div.appendChild(canvasEl);
     const canvasEl = dom.tag.canvas();
-    this.parentEl.appendChild(canvasEl);
+    this.$$.canvasEl = canvasEl;
     canvasEl.width = this.canvasWidth;
     canvasEl.height = this.canvasHeight;
     this.ctx = canvasEl.getContext('2d');
+    this.parentEl.appendChild(canvasEl);
     // this.$$.wrapperEl = div;
     this.repaint();
   }
@@ -149,19 +178,22 @@ class Canvas {
   renderImage(ctx) {
     if (this.$$.image) {
       const { image, meta } = this.$$;
-      const { ratio, fitMode } = this.config;
-      const rect = scaling[fitMode](this, ratio, meta);
+      // if (!this.$$.viewport) {
+      //   const { ratio, fitMode } = this.config;
+      //   this.$$.viewport = scaling[fitMode](this, ratio, meta);
+      // }
 
+      const { viewport } = this.$$;
       ctx.drawImage(
         image,
         0,
         0,
         meta.width,
         meta.height,
-        rect.x,
-        rect.y,
-        rect.width,
-        rect.height
+        viewport.x,
+        viewport.y,
+        viewport.width,
+        viewport.height
       );
       // dom.imageSize(image);
     }
@@ -170,7 +202,18 @@ class Canvas {
   setImage(img, meta) {
     this.$$.image = img;
     this.$$.meta = meta;
+    const { ratio, fitMode } = this.config;
+    this.$$.viewport = scaling[fitMode](this, ratio, meta);
     // console.log(img, meta, this.ctx);
+    this.repaint();
+  }
+
+  setConfig(key, value) {
+    this.config[key] = value;
+    if (key === 'ratio') {
+      const { ratio, fitMode } = this.config;
+      this.$$.viewport = scaling[fitMode](this, ratio, this.$$.meta);
+    }
     this.repaint();
   }
 

@@ -46,8 +46,9 @@ class PhotoFlex {
     if (!Object.prototype.hasOwnProperty.call(config, key)) {
       throw new Error(`no such config [${key}]`);
     }
-    config[key] = value;
-    this.canvas.repaint();
+    this.canvas.setConfig(key, value);
+    // config[key] = value;
+    // this.canvas.repaint();
   }
 
   getConfig(key) {
@@ -102,7 +103,10 @@ const init = (userConfig) => {
     width: 400,
     height: 400,
     fitMode: 'none',
-    ranges: ['100x100', '200x200', '300x300'],
+    ranges: {
+      options: ['100x100', '200x200', '300x300'],
+      active: 0
+    },
     range: {
       x: 30,
       y: 30,
@@ -114,6 +118,18 @@ const init = (userConfig) => {
   if (validate(config)) {
     alert('error');
   }
+
+  // inflate range options
+  const { ranges } = config;
+  const toInt = (v) => parseInt(v, 10);
+  const options = ranges.options.map((r) => {
+    const [width, height] = r.split('x').map(toInt);
+    return { width, height };
+  });
+  ranges.options = options;
+  const activeRange = ranges.options[ranges.active];
+  config.range.width = activeRange.width;
+  config.range.height = activeRange.height;
 
   const wrapper = document.querySelector(config.el);
   const canvasWrapper = dom.tag.div('.canvas-wrapper');

@@ -67,7 +67,7 @@ const closest = (elem, selector) => {
 const parseAttr = (expression) => {
   const attr = expression || '';
   return attr
-    .split(',')
+    .split(' ')
     .map((val) => val.trim())
     .filter((val) => val.length > 0);
 };
@@ -80,6 +80,13 @@ const createEl = (tagName, attributes) => {
   return tag;
 };
 const tag = {
+  span: (attr, content) => {
+    const span = createEl('span', parseAttr(attr));
+    if (content) {
+      span.innerHTML = content;
+    }
+    return span;
+  },
   iconButton: (attrs, content) => {
     const button = createEl('BUTTON', parseAttr(attrs));
     button.innerHTML = content;
@@ -137,8 +144,12 @@ const data = {
     return d;
   }
 };
+const stopPropagation = (e) => e.stopPropagation();
 const event = {
   createEventBus: () => new EventBus(),
+  consume: (target, eventName) => {
+    target.addEventListener(eventName, stopPropagation);
+  },
   mousedown: (callback, target, options) => {
     registerEvent(target, 'mousedown', callback, options);
   },
@@ -191,12 +202,17 @@ const parseTemplate = (template, params) => {
 };
 const findOne = (el, cssSelector) => el.querySelector(cssSelector);
 const is = (el, cssSelector, callback) => {
-  // const elem = el.querySelector(cssSelector);
   const found = el.matches(cssSelector);
   if (found) {
-    callback();
+    callback(el);
+    return found;
   }
-  return found;
+  const elem = closest(el, cssSelector);
+  if (elem) {
+    callback(elem);
+    return true;
+  }
+  return false;
 };
 export default {
   tag,

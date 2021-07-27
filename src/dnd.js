@@ -71,7 +71,7 @@ const touchstart = (dnd, e) => {
   ctx.touchTimer = setTimeout(() => {
     convToMouseEvent(e);
     mousedown(dnd, e);
-  }, 500);
+  }, 100);
 };
 const touchmove = (dnd, e) => {
   const { ctx } = dnd;
