@@ -84,13 +84,18 @@ class Selection {
     this.$$ = { parent: parentEl, editing: false };
     this.selection = selection;
     this.ranges = ranges;
-    this.visible = true;
     boxEl = this.prepareEl();
+    this.setVisible(false);
     this.dnd = new Dnd(moveHandler, { selection: this });
     this.resizeDnd = new Dnd(new ResizeHandler(this));
     this.repaint();
   }
 
+  setVisible(visible) {
+    this.visible = visible;
+    const display = this.visible ? '' : 'none';
+    dom.css(this.$$.el, { display });
+  }
   prepareEl() {
     const { parent } = this.$$;
     const div = dom.tag.div('.selection');

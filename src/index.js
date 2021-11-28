@@ -93,6 +93,7 @@ class PhotoFlex {
         height: img.height
       };
       this.canvas.setImage(fileMeta.img, meta);
+      this.selection.setVisible(true);
     });
   }
 }

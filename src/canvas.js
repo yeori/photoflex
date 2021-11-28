@@ -10,37 +10,20 @@ const resolveWidth = (parentEl) => parentEl.offsetWidth;
  * @returns
  */
 const fitByContain = (canvas, scale, meta) => {
-  const imageW = meta.width * scale;
-  const imageH = meta.height * scale;
-  const imgRatio = imageH / imageW;
   const { canvasWidth, canvasHeight } = canvas;
+  const imageW = meta.width;
+  const imageH = meta.height;
+  const imgRatio = imageH / imageW;
   const canvasRatio = canvasHeight / canvasWidth;
-  console.log('[canvas ratio]', canvasRatio);
   let ratio = 1;
   if (canvasRatio <= imgRatio) {
     // landscape
     ratio = canvasHeight / imageH;
-    console.log('[landscape]', ratio);
   } else {
     // portrait
     ratio = canvasWidth / imageW;
-    console.log('[portrait]', ratio);
   }
-  let iw = imageW;
-  let ih = imageH;
-  if (ratio < 1.0) {
-    // overflow
-    iw *= ratio;
-    ih *= ratio;
-  }
-  const x = (canvasWidth - iw) / 2;
-  const y = (canvasHeight - ih) / 2;
-  return {
-    x,
-    y,
-    width: iw,
-    height: ih
-  };
+  return fitByOriginalSize(canvas, ratio, meta);
 };
 /**
  * 이미지가 캔버스를 가득 채우게 조정함
@@ -50,33 +33,20 @@ const fitByContain = (canvas, scale, meta) => {
  * @returns
  */
 const fitByCover = (canvas, scale, meta) => {
-  const imageW = meta.width * scale;
-  const imageH = meta.height * scale;
-  const imgRatio = imageH / imageW;
   const { canvasWidth, canvasHeight } = canvas;
+  const imageW = meta.width;
+  const imageH = meta.height;
+  const imgRatio = imageH / imageW;
   const canvasRatio = canvasHeight / canvasWidth;
-  console.log('[canvas ratio]', canvasRatio);
   let ratio = 1;
   if (canvasRatio <= imgRatio) {
+    // landscape
     ratio = canvasWidth / imageW;
-    console.log('[landscape]', ratio);
   } else {
+    // portrait
     ratio = canvasHeight / imageH;
-    console.log('[portrait]', ratio);
   }
-  let iw = imageW;
-  let ih = imageH;
-  // overflow
-  iw *= ratio;
-  ih *= ratio;
-  const x = (canvasWidth - iw) / 2;
-  const y = (canvasHeight - ih) / 2;
-  return {
-    x,
-    y,
-    width: iw,
-    height: ih
-  };
+  return fitByOriginalSize(canvas, ratio, meta);
 };
 /**
  * 이미지 원본 크기를 유지함(캔버스보다 클 수 있음)
@@ -86,16 +56,17 @@ const fitByCover = (canvas, scale, meta) => {
  * @returns
  */
 const fitByOriginalSize = (canvas, scale, meta) => {
-  const imageW = meta.width * scale;
-  const imageH = meta.height * scale;
   const { canvasWidth, canvasHeight } = canvas;
-  const x = (canvasWidth - imageW) / 2;
-  const y = (canvasHeight - imageH) / 2;
+  const imageW = canvasWidth / scale;
+  const imageH = canvasHeight / scale;
+  const x = (meta.width - imageW) / 2;
+  const y = (meta.height - imageH) / 2;
   return {
     x,
     y,
     width: imageW,
-    height: imageH
+    height: imageH,
+    ratio: scale
   };
 };
 
@@ -186,14 +157,14 @@ class Canvas {
       const { viewport } = this.$$;
       ctx.drawImage(
         image,
-        0,
-        0,
-        meta.width,
-        meta.height,
         viewport.x,
         viewport.y,
         viewport.width,
-        viewport.height
+        viewport.height,
+        0,
+        0,
+        this.canvasWidth,
+        this.canvasHeight
       );
       // dom.imageSize(image);
     }
@@ -204,13 +175,12 @@ class Canvas {
     this.$$.meta = meta;
     const { ratio, fitMode } = this.config;
     this.$$.viewport = scaling[fitMode](this, ratio, meta);
-    // console.log(img, meta, this.ctx);
     this.repaint();
   }
 
   setConfig(key, value) {
     this.config[key] = value;
-    if (key === 'ratio') {
+    if (key === 'ratio' || key === 'fitMode') {
       const { ratio, fitMode } = this.config;
       this.$$.viewport = scaling[fitMode](this, ratio, this.$$.meta);
     }
