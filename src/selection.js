@@ -4,8 +4,8 @@ import { Dnd } from './dnd';
 
 let boxEl;
 const drawRange = (el, selection, editing) => {
-  el.style.left = `${selection.x}px`;
-  el.style.top = `${selection.y}px`;
+  el.style.left = `${selection.x - 1}px`;
+  el.style.top = `${selection.y - 1}px`;
   el.style.width = `${selection.width}px`;
   el.style.height = `${selection.height}px`;
   if (editing) {
