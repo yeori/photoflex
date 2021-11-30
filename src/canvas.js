@@ -75,6 +75,7 @@ const fitByOriginalSize = (canvas, ratio, meta) => {
     width: cvs.width / ratio,
     height: cvs.height / ratio
   };
+  canvas.config.ratio = ratio;
   return { canvas: cvs, image };
 };
 
@@ -120,15 +121,11 @@ const captureOnImage = (canvas, rect) => {
     width: rect.width / ratio,
     height: rect.height / ratio
   };
-  // const scaledRect = source.area;
 
   const imgData = source.capture(scaledRect);
   const copyCanvas = document.createElement('canvas');
-  /*
-   * width, height can be overflowed when scaling
-   */
-  copyCanvas.width = Math.min(source.meta.width, scaledRect.width);
-  copyCanvas.height = Math.min(source.meta.height, scaledRect.height);
+  copyCanvas.width = Math.min(imgData.width);
+  copyCanvas.height = Math.min(imgData.height);
   copyCanvas.getContext('2d').putImageData(imgData, 0, 0);
   return copyCanvas.toDataURL();
 };

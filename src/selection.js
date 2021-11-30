@@ -96,10 +96,7 @@ class Selection {
     this.repaint();
     this.eventBus.on('config-updated', (config) => {
       const { key, value } = config;
-      if (key === 'captureOn') {
-        this.repaint();
-      } else if (key === 'range') {
-        // this.setRange(value);
+      if (key === 'captureOn' || key === 'range' || key === 'fitMode') {
         this.repaint();
       }
     });
