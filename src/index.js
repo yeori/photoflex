@@ -13,15 +13,12 @@ const captureFormatter = {
   dataUrl: (data) => data
 };
 class PhotoFlex {
-  constructor(canvas, selection, el) {
+  constructor(canvas, selection, el, bus) {
     this.canvas = canvas;
     this.selection = selection;
     this.$$ = { ...el };
 
-    const bus = dom.event.createEventBus();
     this.eventBus = bus;
-    this.canvas.eventBus = bus;
-    this.selection.eventBus = bus;
 
     this.eventBus.on('sizebox', (size) => {
       rangebox.showRangeBox(
@@ -32,7 +29,7 @@ class PhotoFlex {
       );
     });
     this.eventBus.on('range', (payload) => {
-      console.log('[RANGE]', payload);
+      // console.log('[RANGE]', payload);
       const { range, save } = payload;
       this.selection.mergeSelection(range);
       if (save) {
@@ -46,19 +43,23 @@ class PhotoFlex {
     if (!Object.prototype.hasOwnProperty.call(config, key)) {
       throw new Error(`no such config [${key}]`);
     }
-    this.canvas.setConfig(key, value);
-    // config[key] = value;
-    // this.canvas.repaint();
+    config[key] = value;
+    this.eventBus.emit('config-updated', { key, value });
   }
 
   getConfig(key) {
     return this.canvas.config[key];
   }
-
+  /**
+   *
+   * @param {object} rectToCaputure {x,y,width,height} on canvas area
+   * @param {string} format return type ('image' | 'dataUrl')
+   * @returns {{image, type, meta}} tag &lt;img/> if format === 'image', dataUrl else
+   */
   capture(rectToCaputure, format) {
     const rect = rectToCaputure || this.getConfig('range');
     const dataURL = this.canvas.copyImageAt(rect);
-    console.log(dataURL);
+    // console.log(dataURL);
     const comma = dataURL.indexOf(',');
     /*
      * base64_encoded_data = original_data * 1.33
@@ -79,9 +80,12 @@ class PhotoFlex {
 
   setRange(range) {
     this.setConfig('range', range);
-    this.selection.setRange(range);
   }
-
+  /**
+   * render image file into canvas. fileSource should be type of File
+   * @param {File} fileSource image file(which is selected from input[type=file])
+   * @returns {Promise}
+   */
   openImage(fileSource) {
     return dom.fileToImage(fileSource).then((fileMeta) => {
       console.log(fileMeta);
@@ -94,6 +98,7 @@ class PhotoFlex {
       };
       this.canvas.setImage(fileMeta.img, meta);
       this.selection.setVisible(true);
+      return meta;
     });
   }
 }
@@ -104,9 +109,10 @@ const init = (userConfig) => {
     width: 400,
     height: 400,
     fitMode: 'none',
+    captureOn: 'viewport',
     ranges: {
       options: ['100x100', '200x200', '300x300'],
-      active: 0
+      active: 1
     },
     range: {
       x: 30,
@@ -139,18 +145,25 @@ const init = (userConfig) => {
 
   return new Promise((resolve) => {
     setTimeout(() => {
-      const canvas = new Canvas(canvasWrapper, config);
+      const eventBus = dom.event.createEventBus();
+      const canvas = new Canvas(canvasWrapper, config, eventBus);
       const selection = new Selection(
         canvasWrapper,
-        config.range,
-        config.ranges
+        config,
+        // config.range,
+        // config.ranges,
+        eventBus
       );
-      // selection.setRange(config.range, config.ranges);
-      const instance = new PhotoFlex(canvas, selection, {
-        rootWrapper: wrapper,
-        canvasWrapper,
-        config
-      });
+      const instance = new PhotoFlex(
+        canvas,
+        selection,
+        {
+          rootWrapper: wrapper,
+          canvasWrapper,
+          config
+        },
+        eventBus
+      );
       if (config.image) {
         dom.tag.img(config.image).then((meta) => {
           instance.setImage(meta.img, meta);

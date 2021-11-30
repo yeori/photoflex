@@ -29,7 +29,6 @@ class Attr {
 const EMPTY_SET = new Set();
 class EventBus {
   constructor() {
-    this.el = document.createComment('dummy el for event bus');
     this.callbacks = new Map();
   }
 

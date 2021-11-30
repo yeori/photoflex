@@ -3,22 +3,25 @@ import dom from './dom';
 import { Dnd } from './dnd';
 
 let boxEl;
-const drawRange = (el, selection, editing) => {
-  el.style.left = `${selection.x - 1}px`;
-  el.style.top = `${selection.y - 1}px`;
+const drawRange = (el, selection, captureOn) => {
+  el.style.left = `${selection.x}px`;
+  el.style.top = `${selection.y}px`;
   el.style.width = `${selection.width}px`;
   el.style.height = `${selection.height}px`;
-  if (editing) {
+  el.classList.remove('viewport');
+  el.classList.remove('image');
+  el.classList.add(captureOn);
+  /* if (editing) {
     el.classList.add('editing');
   } else {
     el.classList.remove('editing');
-  }
+  } */
 };
-const drawSize = (el, selection) => {
+const drawSize = (el, selection, fn) => {
   const w = parseInt(selection.width, 10);
   const h = parseInt(selection.height, 10);
-  const textEl = el.querySelector('.size-text');
-  textEl.innerHTML = `${w} x ${h}`;
+  // const textEl = el.querySelector('.size-text');
+  el.innerHTML = fn(w, h);
 };
 const pos = {
   x: 0,
@@ -80,15 +83,39 @@ function ResizeHandler(selection) {
   };
 }
 class Selection {
-  constructor(parentEl, selection, ranges) {
-    this.$$ = { parent: parentEl, editing: false };
-    this.selection = selection;
-    this.ranges = ranges;
+  constructor(parentEl, config, eventBus) {
+    this.$$ = { parent: parentEl, editing: true };
+    this.config = config;
+    // this.selection = selection;
+    // this.ranges = ranges;
+    this.eventBus = eventBus;
     boxEl = this.prepareEl();
     this.setVisible(false);
     this.dnd = new Dnd(moveHandler, { selection: this });
     this.resizeDnd = new Dnd(new ResizeHandler(this));
     this.repaint();
+    this.eventBus.on('config-updated', (config) => {
+      const { key, value } = config;
+      if (key === 'captureOn') {
+        this.repaint();
+      } else if (key === 'range') {
+        // this.setRange(value);
+        this.repaint();
+      }
+    });
+    this.eventBus.on('viewport', (vp) => {
+      console.log('[VIEWPORT]', vp);
+      this.repaint();
+    });
+  }
+  get selection() {
+    return this.config.range;
+  }
+  get ranges() {
+    return this.config.ranges;
+  }
+  get captureOn() {
+    return this.config.captureOn;
   }
 
   setVisible(visible) {
@@ -98,20 +125,20 @@ class Selection {
   }
   prepareEl() {
     const { parent } = this.$$;
-    const div = dom.tag.div('.selection');
+    const div = dom.tag.div('.selection .editing .viewport');
     this.$$.el = div;
-    dom.event.click(
+    /* dom.event.click(
       div,
       (e) => {
         e.stopPropagation();
         this.toggleEditing();
       },
       { stop: true }
-    );
+    ); */
     /* move button */
     const button = dom.tag.iconButton(
       '.btn-move .btn-icon',
-      '<svg xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 0 24 24" width="18px" fill="#000000"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M10 9h4V6h3l-5-5-5 5h3v3zm-1 1H6V7l-5 5 5 5v-3h3v-4zm14 2l-5-5v3h-3v4h3v3l5-5zm-9 3h-4v3H7l5 5 5-5h-3v-3z"/></svg>'
+      '<svg xmlns="http://www.w3.org/2000/svg" height="18px" viewBox="0 0 24 24" width="18px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M10 9h4V6h3l-5-5-5 5h3v3zm-1 1H6V7l-5 5 5 5v-3h3v-4zm14 2l-5-5v3h-3v4h3v3l5-5zm-9 3h-4v3H7l5 5 5-5h-3v-3z"/></svg>'
     );
     dom.event.consume(button, 'click');
     div.appendChild(button);
@@ -120,20 +147,20 @@ class Selection {
     /* resize button */
     const btnResize = dom.tag.iconButton(
       '.btn-icon .btn-resizer',
-      '<svg xmlns="http://www.w3.org/2000/svg" enable-background="new 0 0 24 24" height="18px" viewBox="0 0 24 24" width="18px" fill="#000000"><g><rect fill="none" height="24" width="24"/></g><g><g/><polygon points="13,6.99 16,6.99 12,3 8,6.99 11,6.99 11,17.01 8,17.01 12,21 16,17.01 13,17.01"/></g></svg>'
+      '<svg xmlns="http://www.w3.org/2000/svg" enable-background="new 0 0 24 24" height="18px" viewBox="0 0 24 24" width="18px" fill="currentColor"><g><rect fill="none" height="24" width="24"/></g><g><g/><polygon points="13,6.99 16,6.99 12,3 8,6.99 11,6.99 11,17.01 8,17.01 12,21 16,17.01 13,17.01"/></g></svg>'
     );
     div.appendChild(btnResize);
     this.$$.btnResize = btnResize;
 
     /* size box */
-    const sizeDiv = dom.tag.div('.size-box');
+    const sizeDiv = dom.tag.div('.size-box .box');
     this.$$.sizeEl = sizeDiv;
     this.$$.sizeText = dom.tag.span('.size-text');
     sizeDiv.appendChild(this.$$.sizeText);
     sizeDiv.appendChild(
       dom.tag.iconButton(
         '.btn-range-lock',
-        '<svg xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 0 24 24" width="16px" fill="#ffffff"><g fill="none"><path d="M0 0h24v24H0V0z"/><path d="M0 0h24v24H0V0z" opacity=".87"/></g><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6zm9 14H6V10h12v10zm-6-3c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"/></svg>'
+        '<svg xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 0 24 24" width="16px" fill="currentColor"><g fill="none"><path d="M0 0h24v24H0V0z"/><path d="M0 0h24v24H0V0z" opacity=".87"/></g><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6zm9 14H6V10h12v10zm-6-3c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"/></svg>'
       )
     );
     dom.event.click(this.$$.sizeText, (e) => {
@@ -141,18 +168,20 @@ class Selection {
       this.eventBus.emit('sizebox', this.selection);
     });
     div.appendChild(sizeDiv);
+
+    /* area box */
+    // const areaBox =
+    const areaBox = (this.$$.areaEl = dom.tag.div('.area-box .box'));
+    const areaText = (this.$$.areaText = dom.tag.span('.area-text'));
+    areaBox.appendChild(areaText);
+    div.appendChild(areaBox);
     return div;
   }
 
-  setRange(range) {
-    this.selection = range;
-    this.repaint();
-  }
-
-  toggleEditing() {
+  /* toggleEditing() {
     this.$$.editing = !this.$$.editing;
     this.repaint();
-  }
+  } */
 
   mergeSelection(selection) {
     const { x, y, width, height } = selection;
@@ -165,8 +194,15 @@ class Selection {
 
   repaint() {
     if (this.selection) {
-      drawRange(this.$$.el, this.selection, this.$$.editing);
-      drawSize(this.$$.sizeEl, this.selection);
+      drawRange(this.$$.el, this.selection, this.captureOn);
+      drawSize(this.$$.sizeText, this.selection, (w, h) => `${w} x ${h}`);
+
+      const ratio = this.captureOn === 'image' ? this.config.ratio : 1;
+      drawSize(
+        this.$$.areaText,
+        this.selection,
+        (w, h) => `${parseInt(w / ratio)} x ${parseInt(h / ratio)}`
+      );
     }
   }
 }

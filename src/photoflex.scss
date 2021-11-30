@@ -19,19 +19,44 @@
       position: absolute;
       width: 300px;
       height: 300px;
-      border: 1px solid red;
+      outline: 1px solid transparent;
       z-index: 10;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
+      &.viewport {
+        border-color: red;
+        outline-color: red;
+        .box {
+          background-color: red;
+          border-color: inherit;
+        }
+        .btn-icon {
+          background-color: red;
+        }
+      }
+      &.image {
+        border-color: #23ae3a;
+        outline-color: #23ae3a;
+        .box {
+          background-color: #23ae3a;
+          border-color: inherit;
+        }
+        .btn-icon {
+          background-color: #23ae3a;
+        }
+      }
+      button {
+        margin: 0;
+      }
       .btn-icon {
         border: none;
         line-height: 1;
         padding: 4px;
         border-radius: 50px;
         color: #ccc;
-        opacity: 0.3;
+        opacity: 0.7;
         display: none;
         &:hover {
           opacity: 0.8;
@@ -39,16 +64,18 @@
       }
       .btn-move {
         position: absolute;
-        bottom: 100%;
-        right: 100%;
+        top: 0;
+        left: 0;
+        transform: translateX(-110%);
         display: none;
         cursor: all-scroll;
       }
       .btn-resizer {
         position: absolute;
-        top: 100%;
+        bottom: 0;
         left: 100%;
         cursor: se-resize;
+        transform: translate(10%, 10%);
         & > svg {
           transform: rotate(-45deg);
         }
@@ -59,23 +86,43 @@
         left: -1px;
         box-sizing: border-box;
         display: flex;
+        // background-color: red;
+        // border-color: red;
         .size-text {
           user-select: none;
           font-size: 12px;
           padding: 8px;
-          background-color: red;
-          border: 1px solid red;
+          border: 1px solid inherit;
           color: white;
+          white-space: nowrap;
         }
         .btn-range-lock {
           background-color: transparent;
           border: none;
-          background-color: red;
+          background-color: inherit;
+        }
+      }
+      .area-box {
+        position: absolute;
+        top: 0;
+        right: -1px;
+        transform: translate(0, -100%);
+        box-sizing: border-box;
+        display: flex;
+        .area-text {
+          user-select: none;
+          font-size: 12px;
+          padding: 8px;
+          background-color: inherit;
+          border: 1px solid inherit;
+          color: white;
+          white-space: nowrap;
         }
       }
       &.editing {
         .btn-icon {
-          display: block;
+          display: flex;
+          color: white;
         }
       }
     }
